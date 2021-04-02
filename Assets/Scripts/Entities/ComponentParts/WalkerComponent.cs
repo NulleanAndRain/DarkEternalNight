@@ -11,11 +11,14 @@ public class WalkerComponent : MonoBehaviour {
 
     public Rigidbody2D rb;
     public Collider2D[] colliders;
+    public Collider2D groundTrigger;
 
     public float moveSpeed;
     public float jumpForce;
     public float moveSmoothing;
+    public float maxClimbAngle;
     public bool stepingDown { get; private set; } = false;
+    public bool onGround { get => isOnGround();}
 
     public Vector2 boundsTopLeft;
     public Vector2 boundsBotRight;
@@ -27,7 +30,17 @@ public class WalkerComponent : MonoBehaviour {
     Vector2 _vel = Vector2.zero;
     Vector2 _target_vel = Vector2.zero;
     private bool _isSelfMoving = false;
-    public void moveDir(float dir) {
+
+    ContactFilter2D filter = new ContactFilter2D();
+    List<Collider2D> res = new List<Collider2D>();
+
+    private void Start () {
+        filter.layerMask = _LayerMaskGroundPlatforms;
+    }
+
+	public void moveDir(float dir) {
+        if (!canMove())
+            return;
         _target_vel.x = dir * moveSpeed;
         _target_vel.y = rb.velocity.y;
 
@@ -45,46 +58,56 @@ public class WalkerComponent : MonoBehaviour {
     public void jump() {
         jumpWithForce(jumpForce);
     }
-
     public void jumpHalfHeight() {
         jumpWithForce(jumpForce * 0.75f);
     }
-
     public void jumpWithForce(float force) {
+        if (!onGround) return;
         rb.AddForce(new Vector2(0, force), ForceMode2D.Impulse);
     }
 
-    private Vector2 _overlap1 = new Vector2();
-    private Vector2 _overlap2 = new Vector2();
-    public bool isOnGround() {
-        _overlap1.y = rb.position.y - 0.1f;
-        _overlap2.y = rb.position.y + 0.1f;
+    List<ContactPoint2D> contactPoints = new List<ContactPoint2D>();
+    public bool isOnGround () {
+        groundTrigger.OverlapCollider(filter, res);
 
-        _overlap1.x = rb.position.x + boundsTopLeft.x;
-        _overlap2.x = rb.position.x + boundsBotRight.x;
-
-        foreach (var c in Physics2D.OverlapAreaAll(_overlap1, _overlap2, _LayerMaskGroundPlatforms)) {
+        foreach (var c in res) {
             if (c.gameObject != gameObject && c.attachedRigidbody != null) {
-                if (c.attachedRigidbody.isKinematic)
+                if (c.attachedRigidbody.isKinematic) {
                     return Math.Abs(rb.velocity.y) <= 1e-4;
+                }
                 return Mathf.Abs(rb.velocity.y - c.attachedRigidbody.velocity.y) <= 1e-4;
             }
         }
         return false;
     }
 
+    private bool canMove () {
+        groundTrigger.OverlapCollider(filter, res);
 
-    Vector2 _plOverlap1;
+        foreach (var c in res) {
+            if (c.GetContacts(contactPoints) > 0) {
+                foreach (var point in contactPoints) {
+                    float angle = Vector2.Angle(Vector2.up, point.normal) % 180;
+                    //Debug.Log(angle);
+                    if (angle <= maxClimbAngle)
+                        return true;
+                }
+            }
+        }
+        return false;
+    }
+
+	Vector2 _plOverlap1;
     Vector2 _plOverlap2;
     public void stepDownPlatform() {
         if (_onEndSteppingDown == null) _onEndSteppingDown = delegate { };
         stepingDown = true;
 
-        _plOverlap1.x = rb.position.x - 0.49f;
-        _plOverlap1.y = rb.position.y;
+        _plOverlap1.x = rb.position.x + boundsTopLeft.x * .95f;
+        _plOverlap1.y = rb.position.y + boundsBotRight.y * .99f;
 
-        _plOverlap2.x = rb.position.x + 0.49f;
-        _plOverlap2.y = rb.position.y - 0.1f;
+        _plOverlap2.x = rb.position.x + boundsBotRight.x * .95f;
+        _plOverlap2.y = rb.position.y + boundsBotRight.y * 1.01f;
 
         foreach (var c in Physics2D.OverlapAreaAll(
                _plOverlap1,
@@ -107,28 +130,11 @@ public class WalkerComponent : MonoBehaviour {
         }
     }
 
-    public void endStepDown() {
+	public void endStepDown() {
         if (_onEndSteppingDown != null) {
             _onEndSteppingDown();
             _onEndSteppingDown = null;
         }
         stepingDown = false;
-    }
-
-    private void OnDrawGizmos() {
-        Gizmos.color = Color.yellow;
-        _overlap1 = (Vector2)transform.position + boundsTopLeft;
-        _overlap2.x = transform.position.x + boundsTopLeft.x;
-        _overlap2.y = transform.position.y + boundsBotRight.y;
-        Gizmos.DrawRay(_overlap1, _overlap2 - _overlap1);
-        _overlap1.y = transform.position.y + boundsBotRight.y;
-        _overlap2.x = transform.position.x + boundsBotRight.x;
-        Gizmos.DrawRay(_overlap1, _overlap2 - _overlap1);
-        _overlap1.x = transform.position.x + boundsBotRight.x;
-        _overlap2.y = transform.position.y + boundsTopLeft.y;
-        Gizmos.DrawRay(_overlap1, _overlap2 - _overlap1);
-        _overlap1.y = transform.position.y + boundsTopLeft.y;
-        _overlap2 = (Vector2)transform.position + boundsTopLeft;
-        Gizmos.DrawRay(_overlap1, _overlap2 - _overlap1);
     }
 }

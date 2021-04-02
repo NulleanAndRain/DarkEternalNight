@@ -5,7 +5,7 @@ public class PauseControl : MonoBehaviour {
     public GameObject HUD;
     public MenuControl menuControl;
     private static PauseControl _instance;
-    public static bool isPaused { get => _instance.pauseUI.activeSelf; }
+    public static bool isPaused { get => _instance? _instance.pauseUI.activeSelf: false; }
 
     private void Start() {
         if (_instance != null) {
