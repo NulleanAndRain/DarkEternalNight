@@ -15,12 +15,10 @@ public class WalkerComponent : MonoBehaviour {
     public float moveSpeed;
     public float jumpForce;
     public float moveSmoothing;
-    private bool stepingDown = false;
+    public bool stepingDown { get; private set; } = false;
 
     public Vector2 boundsTopLeft;
     public Vector2 boundsBotRight;
-    public float stepCheckDistance;
-    public bool canStepOnBlock;
 
     private event Action _onEndSteppingDown = delegate { };
     public event Action onStepUp = delegate { };
@@ -29,11 +27,11 @@ public class WalkerComponent : MonoBehaviour {
     Vector2 _vel = Vector2.zero;
     Vector2 _target_vel = Vector2.zero;
     private bool _isSelfMoving = false;
-    public void moveDir(int dir) {
+    public void moveDir(float dir) {
         _target_vel.x = dir * moveSpeed;
         _target_vel.y = rb.velocity.y;
 
-        if (dir != 0) {
+        if (Mathf.Abs(dir) >= 1e-4) {
             _isSelfMoving = true;
             rb.velocity = Vector2.SmoothDamp(rb.velocity, _target_vel, ref _vel, moveSmoothing);
         } else if (_isSelfMoving) {
@@ -41,11 +39,6 @@ public class WalkerComponent : MonoBehaviour {
             Vector2 temp = rb.velocity;
             temp.x = 0;
             rb.velocity = temp;
-        }
-
-        if (canStepOnBlock && !stepingDown && canStepUp(dir)) {
-            rb.MovePosition(rb.position + Vector2.up * 1.05f);
-            onStepUp();
         }
     }
 
@@ -63,50 +56,6 @@ public class WalkerComponent : MonoBehaviour {
 
     private Vector2 _overlap1 = new Vector2();
     private Vector2 _overlap2 = new Vector2();
-    public bool canStepUp(int dir) {
-        if (dir == 0 || !isOnGround()) return false;
-        bool isBotStepable = false;
-        bool isBotPlatform = false;
-        _overlap1.y = rb.position.y + boundsBotRight.y + 0.99f;
-        _overlap2.y = rb.position.y + boundsBotRight.y + 0.2f;
-
-        _overlap1.x = rb.position.x + dir * (boundsBotRight.x + 0.01f);
-        _overlap2.x = rb.position.x + dir * (boundsBotRight.x + stepCheckDistance);
-
-        //Debug.DrawLine(_overlap1, _overlap2, Color.red, Time.fixedDeltaTime);
-
-        foreach (var down in Physics2D.OverlapAreaAll(_overlap1, _overlap2, _LayerMaskGroundPlatforms)) {
-            if (down.gameObject != gameObject) {
-                if (down.transform.parent != null) if (down.transform.parent.gameObject == gameObject) continue;
-                if (down.tag == "Enemy" || down.tag == "Collectable" || down.tag == "ThrowableItem" || down.tag == "Player")
-                    continue;
-                //Debug.DrawLine(down.bounds.min, down.bounds.max, Color.magenta, Time.fixedDeltaTime);
-                isBotStepable = true;
-                isBotPlatform = down.tag == "Platforms";
-                break;
-            }
-        }
-        if (!isBotStepable) return false;
-
-        _overlap1.y = rb.position.y + boundsTopLeft.y + 1.1f;
-        _overlap2.y = rb.position.y + boundsBotRight.y + 1.2f;
-
-        //Debug.DrawLine(_overlap1, _overlap2, Color.red, Time.fixedDeltaTime);
-
-        foreach (var up in Physics2D.OverlapAreaAll(_overlap1, _overlap2)) {
-            if (up.gameObject != gameObject) {
-                if (up.transform.parent != null) if (up.transform.parent.gameObject == gameObject) continue;
-                if (isBotPlatform && up.tag != "Platforms") return false;
-                if (up.tag == "Enemy" || up.tag == "Collectable" || up.tag == "ThrowableItem" || up.tag == "Player")
-                    continue;
-                onHorizontalBump();
-                return false;
-            }
-        }
-
-        return true;
-    }
-    
     public bool isOnGround() {
         _overlap1.y = rb.position.y - 0.1f;
         _overlap2.y = rb.position.y + 0.1f;
@@ -120,18 +69,6 @@ public class WalkerComponent : MonoBehaviour {
                     return Math.Abs(rb.velocity.y) <= 1e-4;
                 return Mathf.Abs(rb.velocity.y - c.attachedRigidbody.velocity.y) <= 1e-4;
             }
-        }
-        return false;
-    }
-
-
-    public bool isStandingInPlatform() {
-        foreach (var c in Physics2D.OverlapAreaAll(
-                new Vector2(rb.position.x - 0.49f, rb.position.y + 0.99f),
-                new Vector2(rb.position.x + 0.49f, rb.position.y + 0.1f))
-            ) {
-            if (c.gameObject != gameObject && c.tag == "Platforms")
-                return true;
         }
         return false;
     }

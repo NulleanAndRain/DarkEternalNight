@@ -536,7 +536,7 @@ Rigidbody2D:
   m_Interpolate: 0
   m_SleepingMode: 1
   m_CollisionDetection: 0
-  m_Constraints: 0
+  m_Constraints: 4
 --- !u!1 &850318289
 GameObject:
   m_ObjectHideFlags: 0
@@ -1043,6 +1043,8 @@ GameObject:
   - component: {fileID: 1693803181}
   - component: {fileID: 1693803183}
   - component: {fileID: 1693803182}
+  - component: {fileID: 1693803185}
+  - component: {fileID: 1693803184}
   m_Layer: 9
   m_Name: Player
   m_TagString: Player
@@ -1078,7 +1080,7 @@ BoxCollider2D:
   m_IsTrigger: 0
   m_UsedByEffector: 0
   m_UsedByComposite: 0
-  m_Offset: {x: 0.002265036, y: -0.04756677}
+  m_Offset: {x: 0, y: -0.062}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0, y: 0}
@@ -1089,7 +1091,7 @@ BoxCollider2D:
     adaptiveTiling: 0
   m_AutoTiling: 0
   serializedVersion: 2
-  m_Size: {x: 0.29782432, y: 1.0317118}
+  m_Size: {x: 0.3, y: 1}
   m_EdgeRadius: 0
 --- !u!50 &1693803183
 Rigidbody2D:
@@ -1111,7 +1113,39 @@ Rigidbody2D:
   m_Interpolate: 0
   m_SleepingMode: 1
   m_CollisionDetection: 0
-  m_Constraints: 0
+  m_Constraints: 4
+--- !u!114 &1693803184
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1693803180}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 80f1aabe8979a944cb7b3587e7ca055e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &1693803185
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1693803180}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c7675634b40048440ba633e5102cdaed, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  rb: {fileID: 1693803183}
+  colliders:
+  - {fileID: 1693803182}
+  moveSpeed: 3
+  jumpForce: 5
+  moveSmoothing: 0
+  boundsTopLeft: {x: -0.15, y: 0.438}
+  boundsBotRight: {x: 0.15, y: -0.562}
 --- !u!1 &1777498666
 GameObject:
   m_ObjectHideFlags: 0
@@ -1294,7 +1328,7 @@ PrefabInstance:
     - target: {fileID: 6354522860180357446, guid: 83140044eccaaa14d92238989ef0d41c,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0
+      value: -0.5
       objectReference: {fileID: 0}
     - target: {fileID: 6354522860180357446, guid: 83140044eccaaa14d92238989ef0d41c,
         type: 3}
