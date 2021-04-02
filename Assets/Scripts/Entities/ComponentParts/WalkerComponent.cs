@@ -11,7 +11,7 @@ public class WalkerComponent : MonoBehaviour {
 
     public Rigidbody2D rb;
     public Collider2D[] colliders;
-    public Collider2D groundTrigger;
+    public CircleCollider2D groundTrigger;
 
     public float moveSpeed;
     public float jumpForce;
@@ -32,13 +32,12 @@ public class WalkerComponent : MonoBehaviour {
     private bool _isSelfMoving = false;
 
     ContactFilter2D filter = new ContactFilter2D();
-    List<Collider2D> res = new List<Collider2D>();
 
     private void Start () {
         filter.layerMask = _LayerMaskGroundPlatforms;
     }
 
-	public void moveDir(float dir) {
+    public void moveDir(float dir) {
         if (!canMove())
             return;
         _target_vel.x = dir * moveSpeed;
@@ -62,15 +61,14 @@ public class WalkerComponent : MonoBehaviour {
         jumpWithForce(jumpForce * 0.75f);
     }
     public void jumpWithForce(float force) {
-        if (!onGround) return;
+        if (!onGround || !canMove()) return;
         rb.AddForce(new Vector2(0, force), ForceMode2D.Impulse);
     }
 
     List<ContactPoint2D> contactPoints = new List<ContactPoint2D>();
     public bool isOnGround () {
-        groundTrigger.OverlapCollider(filter, res);
-
-        foreach (var c in res) {
+        var colls = Physics2D.OverlapCircleAll(groundTrigger.bounds.center, groundTrigger.radius, _LayerMaskGroundPlatforms);
+        foreach (var c in colls) {
             if (c.gameObject != gameObject && c.attachedRigidbody != null) {
                 if (c.attachedRigidbody.isKinematic) {
                     return Math.Abs(rb.velocity.y) <= 1e-4;
@@ -82,22 +80,21 @@ public class WalkerComponent : MonoBehaviour {
     }
 
     private bool canMove () {
-        groundTrigger.OverlapCollider(filter, res);
-
-        foreach (var c in res) {
+        var colls = Physics2D.OverlapCircleAll(groundTrigger.bounds.center, groundTrigger.radius, _LayerMaskGroundPlatforms);
+        foreach (var c in colls) {
             if (c.GetContacts(contactPoints) > 0) {
-                foreach (var point in contactPoints) {
-                    float angle = Vector2.Angle(Vector2.up, point.normal) % 180;
-                    //Debug.Log(angle);
-                    if (angle <= maxClimbAngle)
-                        return true;
-                }
+				var point = contactPoints[0];
+                float angle = Vector2.Angle(Vector2.up, point.normal) % 180;
+				if (angle <= maxClimbAngle)
+                    return true;
+            } else {
+				return true;
             }
         }
-        return false;
+        return colls.Length == 0;
     }
 
-	Vector2 _plOverlap1;
+    Vector2 _plOverlap1;
     Vector2 _plOverlap2;
     public void stepDownPlatform() {
         if (_onEndSteppingDown == null) _onEndSteppingDown = delegate { };
@@ -130,7 +127,7 @@ public class WalkerComponent : MonoBehaviour {
         }
     }
 
-	public void endStepDown() {
+    public void endStepDown() {
         if (_onEndSteppingDown != null) {
             _onEndSteppingDown();
             _onEndSteppingDown = null;
